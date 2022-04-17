@@ -3,7 +3,7 @@ SQL Database with Python to store person bird sightings.
 
 # Overview
 This database is meant for storing EBird sightings in a locally stored database to view
-the data in a more cutomizable way. Note that there currently aren't many features,
+the data in a more customizable way. Note that there currently aren't many features,
 as the project is still in progress and even a few current features aren't fully
 developed. 
 
