@@ -20,16 +20,6 @@ def birdApp():
             break
         print('\n')
 
-def syncEBird():
-    url = "https://api.ebird.org/v2/product/lists/US-OR-053"
-
-    payload={}
-    headers = {'X-eBirdApiToken' : 'g9afl65kjorf'}
-
-    response = requests.request("GET", url, headers = headers , data=payload)
-
-    print(response.text)
-
 def makeReport():
     while True:
         time = input("When would you like to make a list for? ")
