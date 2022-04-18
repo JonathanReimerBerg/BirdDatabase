@@ -48,15 +48,19 @@ def makeReport():  #manually add a report to the database
     for bird in birds:
         addBird(time, county, state, country, bird)
 
-def getID(county, state, country):   #get the county ID
+def getID(county, state, country, create_if_none = True):   #get the county ID
     connection = sqlite3.connect("BirdingDatabase.db")
     crsr = connection.cursor()
     command = "SELECT id FROM COUNTIES where county_name = '" + county + "' and belonging_state = '"
     command += state + "' and belonging_country = '" + country + "'"
     crsr.execute(command)
     county_id = crsr.fetchone()
-    if county_id is None:            #if it doesn't exist, at the county to the database
+    if (county_id is None) and (create_if_none):            #if it doesn't exist, at the county to the database
         county_id = addCounty(county, state, country)
+    elif (create_if_none == False) and (county_id is None):
+        print("Location not found")
+        return
+    print(county_id)
     county_id = str(county_id)
     numeric_filter = filter(str.isdigit, county_id)
     return("".join(numeric_filter))
@@ -107,19 +111,22 @@ def addBird(time, county, state, country, bird):
 
 
 def printList():    #not currently functional with specific locations
-    timePeriod = input("What list would you like to see: ")
-    if timePeriod == "life":
-        timePeriod = "seen"
-    elif timePeriod.isdigit():
-        if 2017 < int(timePeriod) < 2023:
-            timePeriod = "in_" + timePeriod
+    data = input("What list would you like to see (year/county/state/country): ")
+    data = data.split("/")
+    if data[0] == "life":
+        data[0] = "seen"
+    elif data[0].isdigit():
+        if 2017 < int(data[0]) < 2023:
+            data[0] = "in_" + data[0]
         else:
             print("Invalid year")
             return
     else:
         print("Try giving a year or 'life' for life list")
         return
-    print(getList(time, None, None, None, None)
+    lyst = getList(data[0], data[1], data[2], data[3], None)
+    for i in lyst:
+        print(i)
     return   
 
 def getList(time, county = None, state = None, country = None, sort = None): #sort not yet implemented
@@ -128,13 +135,15 @@ def getList(time, county = None, state = None, country = None, sort = None): #so
     if county is None:
         command = "SELECT name from ALL_BIRDS where " + time + " = 1 order by name"
     else:
-        county_id = getID(county, state, country)
+        county_id = getID(county, state, country, False)
+        if county_id is None:
+            return(" ")
         county_code = county + "_" + state + "_" + country + "_" + str(county_id)
         command = "SELECT bird from " + county_code + " where " + time + " = 1"
     crsr.execute(command)
-    birds = str(crsr.fetchall())[2:-3]
+    birds = str(crsr.fetchall())[3:-4]
     birds = birds.replace('"', "'")
-    birds = birds.split(',), (')
+    birds = birds.split("',), ('")
     connection.commit()
     connection.close()
     return(birds)  
@@ -170,7 +179,7 @@ def addCounty(county, state, country):
     countyID = str(crsr.fetchall())
     numeric_filter = filter(str.isdigit, countyID)
     countyID = int("".join(numeric_filter)) + 1
-    command = "INSERT INTO COUNTIES(id, county_name, belonging_state, belonging_country) VALUES". #add county to county table
+    command = "INSERT INTO COUNTIES(id, county_name, belonging_state, belonging_country) VALUES" #add county to county table
     command += '\n'
     command += "    ("+str(countyID)+", '"+county+"', '"+state+"', '"+country+"');"
     crsr.execute(command)
