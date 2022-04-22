@@ -58,9 +58,8 @@ def getID(county, state, country, create_if_none = True):   #get the county ID
     if (county_id is None) and (create_if_none):            #if it doesn't exist, at the county to the database
         county_id = addCounty(county, state, country)
     elif (create_if_none == False) and (county_id is None):
-        print("Location not found")
+        print("\n", "Location not found")
         return
-    print(county_id)
     county_id = str(county_id)
     numeric_filter = filter(str.isdigit, county_id)
     return("".join(numeric_filter))
@@ -124,7 +123,15 @@ def printList():    #not currently functional with specific locations
     else:
         print("Try giving a year or 'life' for life list")
         return
-    lyst = getList(data[0], data[1], data[2], data[3], None)
+    try:
+        lyst = getList(data[0], data[1], data[2], data[3], None)
+    except IndexError:
+        print('\n')
+        print("Make sure you input a time/location fitting the requested format (use '/' even with empty catergory)")
+        return
+    print('\n')
+    if len(lyst) == 0:
+        print("No birds reported")
     for i in lyst:
         print(i)
     return   
