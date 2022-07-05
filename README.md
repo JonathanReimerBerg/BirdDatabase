@@ -13,7 +13,8 @@ empty database that will be created for you later. You will need to download a r
 version of SQLite (found here: https://sqlitebrowser.org/), and then run the DatabaseWrite.py to
 create the Database structure. Then you can use the SQL_App.py's import data function to add your personal
 data, which is obtained with EBird's "Download my data" function. Make sure the CSV file is named 
-"MyEBirdData.csv", or change the default name in the python code. 
+"MyEBirdData.csv", or change the default name in the python code. Finally, run the SQL_App.py file 
+to run the program.
 
 # License
 [MIT](https://choosealicense.com/licenses/mit/)
