@@ -1,7 +1,5 @@
 import sqlite3
 import re
-import urllib.request
-import requests
 import csv
 
 def birdApp():        #menu
