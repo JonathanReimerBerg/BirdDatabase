@@ -1,9 +1,13 @@
 import sqlite3
 import re
+import urllib.request
 import csv
 
 def birdApp():        #menu
-    print("you have", countLifers(), "lifers", '\n')
+    try:
+        print("you have", countLifers(), "lifers", '\n')
+    except:
+        print("Database not yet created, try running 'DatabaseWriter.py' first")
     while True:
         option = input("i: import EBird data" + '\n' + "p: print personal list" +
         '\n' + "m: make a birding report" + '\n' + "e: end program" + '\n\n')
@@ -129,9 +133,11 @@ def printList():    #not currently functional with specific locations
         return
     print('\n')
     if len(lyst) == 0:
-        print("No birds reported")
-    for i in lyst:
-        print(i)
+        print(" No birds reported")
+    else:
+        for i in lyst:
+            print(i)
+        print('\n', "You have seen " + str(len(lyst)) + " birds")
     return   
 
 def getList(time, county = None, state = None, country = None, sort = None): #sort not yet implemented
@@ -142,7 +148,7 @@ def getList(time, county = None, state = None, country = None, sort = None): #so
     else:
         county_id = getID(county, state, country, False)
         if county_id is None:
-            return(" ")
+            return("")
         county_code = county + "_" + state + "_" + country + "_" + str(county_id)
         command = "SELECT bird from " + county_code + " where " + time + " = 1"
     crsr.execute(command)
@@ -197,7 +203,7 @@ def addCounty(county, state, country):
     crsr.execute(command)
     connection.commit()
     connection.close()
-    print("The county " + county + " has been added" + '\n')
+    print("The county "+county + "/" + state + "/" + country + " has been added" + '\n')
     return(countyID)
 
 def importData():  #imports data from a downloaded ebird csv file
@@ -207,7 +213,7 @@ def importData():  #imports data from a downloaded ebird csv file
     countries = []
     counties = []
     years = []
-    with open('MyEBirdData.csv', 'r') as file:   #Name must match this
+    with open('MyEBirdData.csv', 'r', encoding='utf') as file:   #Name must match this
         reader = csv.reader(file)
         for row in reader:
             names.append(row[1])
