@@ -12,7 +12,7 @@ To use, download all the files and place them in the same directory. The DB file
 empty database that will be created for you later. You will need to download a recent 
 version of SQLite (found here: https://sqlitebrowser.org/), and then run the DatabaseWrite.py to
 create the Database structure. Then you will need to download your eBird data, which is obtained 
-with EBird's "Download my data" function. Make sure the CSV file is named "MyEBirdData.csv", or \
+with EBird's "Download my data" function. Make sure the CSV file is named "MyEBirdData.csv", or 
 change the default name in the python code. Finally, run the SQL_App.py file's import data tool to 
 import the data into the database (this may take a while if it hasn't been done before). 
 
