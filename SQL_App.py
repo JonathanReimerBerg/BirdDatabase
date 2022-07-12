@@ -1,6 +1,5 @@
 import sqlite3
 import re
-import urllib.request
 import csv
 
 def birdApp():        #menu
@@ -67,6 +66,10 @@ def getID(county, state, country, create_if_none = True):   #get the county ID
     return("".join(numeric_filter))
     
 def addBird(time, county, state, country, bird):
+    if len(county) > 0:
+        addBird(time, "", state, country, bird)
+    elif len(state) > 0:
+        addBird(time, "", "", country, bird)
     if int(time[-4:]) < 2018:    #sql formatting stuff
         time = "seen"
     bird = bird.replace("'", "''")
