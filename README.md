@@ -16,5 +16,12 @@ with EBird's "Download my data" function. Make sure the CSV file is named "MyEBi
 change the default name in the python code. Finally, run the SQL_App.py file's import data tool to 
 import the data into the database (this may take a while if it hasn't been done before). 
 
+Formatting:
+When prompted to give a location/time, enter the data seperated by /'s. Country and state/region's 
+will follow abbreviations which can be found [here](https://ebird.org/content/eBirdCommon/docs/ebird_state_country_codes.pdf), with counties/subregions 
+using full names with underscores instead of any spaces. If you wnat a country list, still include 
+the /'s for the empty subregions. For example, 'life/Los_Angeles/CA/US' for aLos Angeles county 
+life list, '2022///US' for a United States 2022 list and 'life///' for a global life list. 
+
 # License
 [MIT](https://choosealicense.com/licenses/mit/)
