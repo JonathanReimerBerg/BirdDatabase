@@ -1,6 +1,7 @@
 import sqlite3
 import re
 import csv
+from sqlite3 import OperationalError
 
 def birdApp():        #menu
     try:
@@ -22,22 +23,19 @@ def birdApp():        #menu
         print('\n')
 
 def makeReport():  #manually add a report to the database
-    while True:
-        time = input("When would you like to make a list for? ")
-        if time.isdigit():
-            if (time == '2018' or time == '2019' or time == '2020' or time == '2021'):
-                time = "in_" + time
-                break
-            else:
-                print("not a valid year")
+    data = input("What list would you like to see (year/county/state/country): ")
+    data = data.split("/")
+    if data[0] == "life":
+        data[0] = "seen"
+    elif data[0].isdigit():
+        if 1900 < int(data[0]) < 2023:
+            data[0] = "in_" + data[0]
         else:
-            time = "seen"
-            break
-        
-    location = []
-    county = input("What county was this seen in? ")
-    state = input("What state was this seen in? ")
-    country = input("What country was this seen in? ")
+            print("Invalid year")
+            return
+    else:
+        print("Try giving a year or 'life' for life list")
+        return
     print("Enter your list to report: ")
     birds = []
     while True:
@@ -47,7 +45,7 @@ def makeReport():  #manually add a report to the database
         else:
             break
     for bird in birds:
-        addBird(time, county, state, country, bird)
+        addBird(data[0], data[1], data[2], data[3], bird)
 
 def getID(county, state, country, create_if_none = True):   #get the county ID
     connection = sqlite3.connect("BirdingDatabase.db")
@@ -64,22 +62,12 @@ def getID(county, state, country, create_if_none = True):   #get the county ID
     county_id = str(county_id)
     numeric_filter = filter(str.isdigit, county_id)
     return("".join(numeric_filter))
-    
-def addBird(time, county, state, country, bird):
-    if len(county) > 0:
-        addBird(time, "", state, country, bird)
-    elif len(state) > 0:
-        addBird(time, "", "", country, bird)
-    if int(time[-4:]) < 2018:    #sql formatting stuff
-        time = "seen"
-    bird = bird.replace("'", "''")
+
+def addBird(time, county, state, country, birdname):
+    bird = birdname.replace("'", "''")   #birdname is used so future calls don't get changed twice
     if ("sp." in bird) or ("/" in bird) or ("Domestic" in bird) or (" x " in bird):
         return
     bird = re.sub(r" ?\([^)]+\)", "", bird)
-    county = county.replace(" ", "_")
-    county = county.replace(".", "")
-    
-    county_id = getID(county, state, country)
     
     connection = sqlite3.connect("BirdingDatabase.db")
     crsr = connection.cursor()
@@ -87,11 +75,31 @@ def addBird(time, county, state, country, bird):
     crsr.execute(command)
     exist = crsr.fetchone()
     if exist is None:
-        print("Bird, " + bird + " not found")
-        return
-    command = "UPDATE ALL_BIRDS set " + time + " = 1 WHERE name = '" + bird + "'"   #make sure lifer is seen in ALL_BIRDS
-    crsr.execute(command)
-    connection.commit()
+        print("Bird, " + bird + ", not found")
+        return()    #if bird is invalid, skip it
+    
+    if len(county) > 0:
+        addBird(time, "", state, country, birdname)
+    elif len(state) > 0:
+        addBird(time, "", "", country, birdname)
+    if int(time[-4:]) < 1901:    
+        time = "seen"    #Birds before 1901 are only added to life lists
+
+    county = county.replace(" ", "_")
+    county = county.replace(".", "")    
+    county_id = getID(county, state, country)
+    
+    try:
+        command = "UPDATE ALL_BIRDS set " + time + " = 1 WHERE name = '" + bird + "'"   #make sure lifer is seen in ALL_BIRDS
+        crsr.execute(command)
+        connection.commit()
+    except OperationalError:    #if the year isn't found, add it to the table and then add the bird
+        command = "ALTER TABLE ALL_BIRDS Add " + time + " varchar(1) not null DEFAULT 0"
+        crsr.execute(command)
+        connection.commit()
+        command = "UPDATE ALL_BIRDS set " + time + " = 1 WHERE name = '" + bird + "'"
+        crsr.execute(command)
+        connection.commit()
     command = "UPDATE ALL_Birds set seen = 1 WHERE name = '" + bird + "'"
     crsr.execute(command)
     connection.commit()
@@ -100,16 +108,24 @@ def addBird(time, county, state, country, bird):
     crsr.execute(command)
     exist = crsr.fetchone()
     if exist is None:   #if the bird isn't in the specific county list
-        command = "INSERT into " + county_code + "(bird, in_2018, in_2019, in_2020, in_2021, in_2022, seen) VALUES"
-        command += '\n' + "('" + bird + "', 0,0,0,0,0,0);"
+        command = "INSERT into " + county_code + "(bird) VALUES"
+        command += '\n' + "('" + bird + "');"
         crsr.execute(command)
         connection.commit()
     command = "UPDATE " + county_code + " set seen = 1 WHERE bird = '" + bird + "'"  #add bird to county
     crsr.execute(command)
     connection.commit()
-    command = "UPDATE " + county_code + " set " + time + " = 1 WHERE bird = '" + bird + "'"
-    crsr.execute(command)
-    connection.commit()
+    try:
+        command = "UPDATE " + county_code + " set " + time + " = 1 WHERE bird = '" + bird + "'"
+        crsr.execute(command)
+        connection.commit()
+    except OperationalError:    #if the year isn't found, add it to the table and then add the bird
+        command = "ALTER TABLE " + county_code + " Add " + time + " varchar(1) not null DEFAULT 0"
+        crsr.execute(command)
+        connection.commit()
+        command = "UPDATE " + county_code + " set " + time + " = 1 WHERE bird = '" + bird + "'"
+        crsr.execute(command)
+        connection.commit()
     connection.close
     return
 
@@ -120,7 +136,7 @@ def printList():    #not currently functional with specific locations
     if data[0] == "life":
         data[0] = "seen"
     elif data[0].isdigit():
-        if 2017 < int(data[0]) < 2023:
+        if 1900 < int(data[0]) < 2023:
             data[0] = "in_" + data[0]
         else:
             print("Invalid year")
@@ -146,7 +162,7 @@ def printList():    #not currently functional with specific locations
 def getList(time, county = None, state = None, country = None, sort = None): #sort not yet implemented
     connection = sqlite3.connect("BirdingDatabase.db")
     crsr = connection.cursor()
-    if county is None:
+    if county == "":
         command = "SELECT name from ALL_BIRDS where " + time + " = 1 order by name"
     else:
         county_id = getID(county, state, country, False)
@@ -173,19 +189,6 @@ def countLifers():   #runs when program is started
     connection.close()
     return(life_list)
 
-def liferCheck(bird):  #returns boolean depending on if the bird has been seen
-    connection = sqlite3.connect("BirdingDatabase.db")
-    crsr = connection.cursor()
-    for i in range(2018, 2022):
-        crsr.execute("SELECT in_" + str(i) + " from ALL_BIRDS where name = '" + bird + "'")
-        if "".join(str(crsr.fetchall()))[3] == '1':
-            connection.commit()
-            connection.close()
-            return(1)
-    connection.commit()
-    connection.close()
-    return(0)
-
 def addCounty(county, state, country):
     connection = sqlite3.connect("BirdingDatabase.db")
     crsr = connection.cursor()
@@ -200,13 +203,12 @@ def addCounty(county, state, country):
     connection.commit()
     county_code = county + "_" + state + "_" + country + "_" + str(countyID)
     command = "CREATE TABLE "+county_code+" ("+'\n'+"    bird varchar(64) not null unique," + '\n'  #create table for county sightings
-    command += "    in_2018,"+'\n'+"    in_2019,"+'\n'+"    in_2020,"+'\n'+"    in_2021,"+'\n'
-    command += "    in_2022,"+'\n'+"    seen,"+'\n'+"    CONSTRAINT COUNTY_"+str(countyID)+"_PK PRIMARY KEY(bird)"
+    command += "    seen,"+'\n'+"    CONSTRAINT COUNTY_"+str(countyID)+"_PK PRIMARY KEY(bird)"
     command += '\n' + ");"
     crsr.execute(command)
     connection.commit()
     connection.close()
-    print("The county "+county + "/" + state + "/" + country + " has been added" + '\n')
+    print("The region "+county + "/" + state + "/" + country + " has been added" + '\n')
     return(countyID)
 
 def importData():  #imports data from a downloaded ebird csv file
