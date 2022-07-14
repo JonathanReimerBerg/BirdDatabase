@@ -27,25 +27,20 @@ connection.commit()
 
 command = """CREATE TABLE ALL_BIRDS (
     scientific_name varchar(64),
-    seen INTEGER varchar(1) not null,
+    life INTEGER varchar(1) not null,
     type varchar(64),
     name varchar(64) not null UNIQUE,
-    in_2018 varchar(1) not null,
-    in_2019 varchar(1) not null,
-    in_2020 varchar(1) not null,
-    in_2021 varchar(1) not null,
-    in_2022 varchar(1) not null,
     CONSTRAINT ALL_BIRDS_PK Primary KEY(name)
     );"""
 
 crsr.execute(command)
 connection.commit()
 	
-command = "INSERT INTO ALL_BIRDS(name, scientific_name, type, seen, in_2018, in_2019, in_2020, in_2021, in_2022) VALUES"
+command = "INSERT INTO ALL_BIRDS(name, scientific_name, type, life) VALUES"
 
 for i in range(0, len(names)):
     command += '\n'
-    command += ("    ('" + names[i] + "', '" + sci_names[i] + "', '" + groups[i] + "', 0, 0, 0, 0, 0, 0),") # 0 -> not seen, 1 -> seen
+    command += ("    ('" + names[i] + "', '" + sci_names[i] + "', '" + groups[i] + "', 0),") # 0 -> not seen, 1 -> seen
 
 command = command[:-1] #remove final comma
 
