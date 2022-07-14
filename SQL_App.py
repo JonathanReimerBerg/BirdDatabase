@@ -22,6 +22,17 @@ def birdApp():        #menu
             break
         print('\n')
 
+def runCommand(command, fetchone = False, fetchall = False):
+    connection = sqlite3.connect("BirdingDatabase.db")
+    crsr = connection.cursor()
+    crsr.execute(command)
+    if fetchone:
+        return(crsr.fetchone())
+    elif fetchall:
+        return(crsr.fetchall())
+    connection.commit()
+    connection.close
+
 def makeReport():  #manually add a report to the database
     data = input("What list would you like to see (year/county/state/country): ")
     data = data.split("/")
@@ -48,12 +59,9 @@ def makeReport():  #manually add a report to the database
         addBird(data[0], data[1], data[2], data[3], bird)
 
 def getID(county, state, country, create_if_none = True):   #get the county ID
-    connection = sqlite3.connect("BirdingDatabase.db")
-    crsr = connection.cursor()
     command = "SELECT id FROM COUNTIES where county_name = '" + county + "' and belonging_state = '"
     command += state + "' and belonging_country = '" + country + "'"
-    crsr.execute(command)
-    county_id = crsr.fetchone()
+    county_id = runCommand(command, True)
     if (county_id is None) and (create_if_none):            #if it doesn't exist, at the county to the database
         county_id = addCounty(county, state, country)
     elif (create_if_none == False) and (county_id is None):
@@ -68,17 +76,13 @@ def addBird(time, county, state, country, birdname):
     if ("sp." in bird) or ("/" in bird) or ("Domestic" in bird) or (" x " in bird):
         return
     bird = re.sub(r" ?\([^)]+\)", "", bird)
-    
-    connection = sqlite3.connect("BirdingDatabase.db")
-    crsr = connection.cursor()
-    command = "SELECT * from ALL_BIRDS where name = '" + bird + "'"  #check to make sure the bird is valid
-    crsr.execute(command)
-    exist = crsr.fetchone()
+
+    exist = runCommand("SELECT * from ALL_BIRDS where name = '" + bird + "'", True) #check to make sure the bird is valid
     if exist is None:
         print("Bird, " + bird + ", not found")
         return()    #if bird is invalid, skip it
     
-    if len(county) > 0:
+    if len(county) > 0:   #add bird to the state/province of that county
         addBird(time, "", state, country, birdname)
     elif len(state) > 0:
         addBird(time, "", "", country, birdname)
@@ -90,43 +94,23 @@ def addBird(time, county, state, country, birdname):
     county_id = getID(county, state, country)
     
     try:
-        command = "UPDATE ALL_BIRDS set " + time + " = 1 WHERE name = '" + bird + "'"   #make sure lifer is seen in ALL_BIRDS
-        crsr.execute(command)
-        connection.commit()
+        runCommand("UPDATE ALL_BIRDS set " + time + " = 1 WHERE name = '" + bird + "'") #make sure bird is seen in ALL_BIRDS
     except OperationalError:    #if the year isn't found, add it to the table and then add the bird
-        command = "ALTER TABLE ALL_BIRDS Add " + time + " varchar(1) not null DEFAULT 0"
-        crsr.execute(command)
-        connection.commit()
-        command = "UPDATE ALL_BIRDS set " + time + " = 1 WHERE name = '" + bird + "'"
-        crsr.execute(command)
-        connection.commit()
-    command = "UPDATE ALL_Birds set seen = 1 WHERE name = '" + bird + "'"
-    crsr.execute(command)
-    connection.commit()
+        runCommand("ALTER TABLE ALL_BIRDS Add " + time + " varchar(1) not null DEFAULT 0")
+        runCommand("UPDATE ALL_BIRDS set " + time + " = 1 WHERE name = '" + bird + "'")
+    runCommand("UPDATE ALL_Birds set seen = 1 WHERE name = '" + bird + "'")
+    
     county_code = county + "_" + state + "_" + country + "_" + str(county_id)
-    command = "SELECT * FROM " + county_code + " WHERE bird = '" + bird + "'" 
-    crsr.execute(command)
-    exist = crsr.fetchone()
+    exist = runCommand("SELECT * FROM " + county_code + " WHERE bird = '" + bird + "'", True)
     if exist is None:   #if the bird isn't in the specific county list
-        command = "INSERT into " + county_code + "(bird) VALUES"
-        command += '\n' + "('" + bird + "');"
-        crsr.execute(command)
-        connection.commit()
-    command = "UPDATE " + county_code + " set seen = 1 WHERE bird = '" + bird + "'"  #add bird to county
-    crsr.execute(command)
-    connection.commit()
+        runCommand("INSERT into " + county_code + "(bird) VALUES" + '\n' + "('" + bird + "');")
+    runCommand("UPDATE " + county_code + " set seen = 1 WHERE bird = '" + bird + "'")  #add bird to county
+
     try:
-        command = "UPDATE " + county_code + " set " + time + " = 1 WHERE bird = '" + bird + "'"
-        crsr.execute(command)
-        connection.commit()
+        runCommand("UPDATE " + county_code + " set " + time + " = 1 WHERE bird = '" + bird + "'")
     except OperationalError:    #if the year isn't found, add it to the table and then add the bird
-        command = "ALTER TABLE " + county_code + " Add " + time + " varchar(1) not null DEFAULT 0"
-        crsr.execute(command)
-        connection.commit()
-        command = "UPDATE " + county_code + " set " + time + " = 1 WHERE bird = '" + bird + "'"
-        crsr.execute(command)
-        connection.commit()
-    connection.close
+        runCommand("ALTER TABLE " + county_code + " Add " + time + " varchar(1) not null DEFAULT 0")
+        runCommand("UPDATE " + county_code + " set " + time + " = 1 WHERE bird = '" + bird + "'")
     return
 
 
@@ -145,10 +129,9 @@ def printList():    #not currently functional with specific locations
         print("Try giving a year or 'life' for life list")
         return
     try:
-        lyst = getList(data[0], data[1], data[2], data[3], None)
+        lyst = getList(data[0], data[1], data[2], data[3])
     except IndexError:
-        print('\n')
-        print("Make sure you input a time/location fitting the requested format (use '/' even with empty catergory)")
+        print('\n' + "Make sure you input a time/location fitting the requested format (use '/' even with empty catergory)")
         return
     print('\n')
     if len(lyst) == 0:
@@ -159,10 +142,8 @@ def printList():    #not currently functional with specific locations
         print('\n', "You have seen " + str(len(lyst)) + " birds")
     return   
 
-def getList(time, county = None, state = None, country = None, sort = None): #sort not yet implemented
-    connection = sqlite3.connect("BirdingDatabase.db")
-    crsr = connection.cursor()
-    if county == "":
+def getList(time, county = None, state = None, country = None): 
+    if country == "":
         command = "SELECT name from ALL_BIRDS where " + time + " = 1 order by name"
     else:
         county_id = getID(county, state, country, False)
@@ -170,44 +151,31 @@ def getList(time, county = None, state = None, country = None, sort = None): #so
             return("")
         county_code = county + "_" + state + "_" + country + "_" + str(county_id)
         command = "SELECT bird from " + county_code + " where " + time + " = 1"
-    crsr.execute(command)
-    birds = str(crsr.fetchall())[3:-4]
+    try:
+        birds = str(runCommand(command, False, True))[3:-4]
+    except OperationalError:
+        return("")
     birds = birds.replace('"', "'")
     birds = birds.split("',), ('")
-    connection.commit()
-    connection.close()
     return(birds)  
 
-def countLifers():   #runs when program is started
-    connection = sqlite3.connect("BirdingDatabase.db")
-    crsr = connection.cursor()
-    crsr.execute("SELECT count(*) from ALL_BIRDS where seen = 1")
-    life_list = str(crsr.fetchall())
+def countLifers():   #runs when program is started\
+    life_list = str(runCommand("SELECT count(*) from ALL_BIRDS where seen = 1", False, True))
     numeric_filter = filter(str.isdigit, life_list)
     life_list = "".join(numeric_filter)
-    connection.commit()
-    connection.close()
     return(life_list)
 
 def addCounty(county, state, country):
-    connection = sqlite3.connect("BirdingDatabase.db")
-    crsr = connection.cursor()
-    crsr.execute("SELECT count(*) from COUNTIES")
-    countyID = str(crsr.fetchall())
+    countyID = str(runCommand("SELECT count(*) from COUNTIES", False, True))
     numeric_filter = filter(str.isdigit, countyID)
     countyID = int("".join(numeric_filter)) + 1
     command = "INSERT INTO COUNTIES(id, county_name, belonging_state, belonging_country) VALUES" #add county to county table
-    command += '\n'
-    command += "    ("+str(countyID)+", '"+county+"', '"+state+"', '"+country+"');"
-    crsr.execute(command)
-    connection.commit()
+    command += '\n' + "    ("+str(countyID)+", '"+county+"', '"+state+"', '"+country+"');"
+    runCommand(command)
     county_code = county + "_" + state + "_" + country + "_" + str(countyID)
     command = "CREATE TABLE "+county_code+" ("+'\n'+"    bird varchar(64) not null unique," + '\n'  #create table for county sightings
-    command += "    seen,"+'\n'+"    CONSTRAINT COUNTY_"+str(countyID)+"_PK PRIMARY KEY(bird)"
-    command += '\n' + ");"
-    crsr.execute(command)
-    connection.commit()
-    connection.close()
+    command += "    seen,"+'\n'+"    CONSTRAINT COUNTY_"+str(countyID)+"_PK PRIMARY KEY(bird)" + '\n' + ");"
+    runCommand(command)
     print("The region "+county + "/" + state + "/" + country + " has been added" + '\n')
     return(countyID)
 
