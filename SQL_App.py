@@ -10,16 +10,19 @@ def birdApp():        #menu
         print("Database not yet created, try running 'DatabaseWriter.py' first")
     while True:
         option = input("i: import EBird data" + '\n' + "p: print personal list" +
-        '\n' + "m: make a birding report" + '\n' + "e: end program" + '\n\n')
+        '\n' + "m: make a birding report" + '\n' + "c: compare two lists" +
+        '\n' + "e: end program" + '\n\n')
         print('\n')
         if option == 'i':
            importData()
         if option == 'p':
             printList()
         if option == 'm':
-            makeReport() 
+            makeReport()
+        if option == 'c':
+            compareLists()
         if option == 'e':
-            break
+            break  
         print('\n')
 
 #Helper Functions
@@ -35,9 +38,9 @@ def runCommand(command, fetchone = False, fetchall = False):
     connection.commit()
     connection.close
 
-def inputLocation():
-    data = input("What list would you like to see (year/county/state/country): ")
-    data = data.split("/")
+def inputLocation(getLyst = False):
+    inp = input("What list would you like to see (year/county/state/country): ")
+    data = inp.split("/")
     if data[0].isdigit():
         if 1900 < int(data[0]) < 2023:
             data[0] = "in_" + data[0]
@@ -47,6 +50,15 @@ def inputLocation():
     elif (data[0] != 'life') and (data[0] != 'Life'):
         print("Try giving a year or 'life' for life list")
         return("")
+    if len(data) == 0:
+        return("")
+    if getLyst:
+        try:
+            lyst = getList(data[0], data[1], data[2], data[3])
+        except IndexError:
+            print('\n' + "Make sure you input a time/location fitting the requested format (use '/' even with empty catergory)")
+            return("")
+        return(inp, lyst)
     return(data)
 
 def getList(time, county = None, state = None, country = None): 
@@ -154,21 +166,16 @@ def addBird(time, county, state, country, birdname):
 
 
 def printList():    #not currently functional with specific locations
-    data = inputLocation()
+    data = inputLocation(True)
     if len(data) == 0:
         return
-    try:
-        lyst = getList(data[0], data[1], data[2], data[3])
-    except IndexError:
-        print('\n' + "Make sure you input a time/location fitting the requested format (use '/' even with empty catergory)")
-        return
     print('\n')
-    if len(lyst) == 0:
+    if len(data[1]) == 0:
         print(" No birds reported")
     else:
-        for i in lyst:
+        for i in data[1]:
             print(i)
-        print('\n', "You have seen " + str(len(lyst)) + " birds")
+        print('\n', "You have seen " + str(len(data[1])) + " birds")
     return     
 
 def countLifers():   #runs when program is started\
@@ -195,6 +202,32 @@ def importData():  #imports data from a downloaded ebird csv file
             years.append(row[11][0:4])
     for i in range(1, len(names)):
         addBird("in_" + years[i], counties[i], states[i], countries[i], names[i])
+
+
+def compareLists():
+    data1 = inputLocation(True)
+    if len(data1) == 0:
+        return
+    data2 = inputLocation(True)
+    if len(data2) == 0:
+        return
+    print("\nBirds in " + str(data1[0]) + " not in " + str(data2[0]) + ':\n')
+    count1 = 0
+    for bird in data1[1]:
+        if bird not in data2[1]:
+            print(bird)
+            count1 += 1
+    print("\n\nBirds in " + str(data2[0]) + " not in " + str(data1[0]) + ':\n')
+    count2 = 0
+    for bird in data2[1]:
+        if bird not in data1[1]:
+            print(bird)
+            count2 += 1
+    print('\n\n' + str(count1) + " not in " + str(data2[0]))
+    print(str(count2) + " not in " + str(data1[0]))
+    return
+    
+
 
     
     
