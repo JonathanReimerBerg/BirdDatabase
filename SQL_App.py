@@ -2,6 +2,7 @@ import sqlite3
 import re
 import csv
 from sqlite3 import OperationalError
+import datetime
 
 def birdApp():        #menu
     try:
@@ -190,7 +191,7 @@ def importData():  #imports data from a downloaded ebird csv file
     states = []
     countries = []
     counties = []
-    years = []
+    dates = []
     with open('MyEBirdData.csv', 'r', encoding='utf') as file:   #Name must match this
         reader = csv.reader(file)
         for row in reader:
@@ -199,9 +200,19 @@ def importData():  #imports data from a downloaded ebird csv file
             states.append(row[5][3:])
             countries.append(row[5][0:2])
             counties.append(row[6])
-            years.append(row[11][0:4])
-    for i in range(1, len(names)):
-        addBird("in_" + years[i], counties[i], states[i], countries[i], names[i])
+            dates.append(row[11])
+    if input("Import birds from a certain date forward? ") in ['y','Y','Yes','yes','YES']:
+        date = input("From what date would you like to import? mm/dd/yyyy: ")
+        try:
+            date = datetime.datetime(int(date[6:]), int(date[0:2]), int(date[3:5]))
+            for i in range(1, len(names)):
+                if datetime.datetime(int(dates[i][0:4]), int(dates[i][5:7]), int(dates[i][8:])) >= date:
+                    addBird("in_" + dates[i][0:4], counties[i], states[i], countries[i], names[i])
+        except:
+            print("Not a valid year" + '\n')
+    else:   
+        for i in range(1, len(names)):
+            addBird("in_" + dates[i][0:4], counties[i], states[i], countries[i], names[i])
 
 
 def compareLists():
