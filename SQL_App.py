@@ -12,7 +12,7 @@ def birdApp():        #menu
     while True:
         option = input("i: import EBird data" + '\n' + "p: print personal list" +
         '\n' + "m: make a birding report" + '\n' + "c: compare two lists" +
-        '\n' + "e: end program" + '\n\n')
+        '\n' + "s: sum multiple lists together" + '\n' + "e: end program" + '\n\n')
         print('\n')
         if option == 'i':
            importData()
@@ -22,8 +22,10 @@ def birdApp():        #menu
             makeReport()
         if option == 'c':
             compareLists()
+        if option == 's':
+            sumLists()
         if option == 'e':
-            break  
+            break
         print('\n')
 
 #Helper Functions
@@ -46,19 +48,24 @@ def inputLocation(getLyst = False):
         if 1900 < int(data[0]) < 2023:
             data[0] = "in_" + data[0]
         else:
-            print("Invalid year")
-            return("")
+            print('\n' + "Invalid year")
+            return(None)
     elif (data[0] != 'life') and (data[0] != 'Life'):
-        print("Try giving a year or 'life' for life list")
-        return("")
+        print('\n' + "Try giving a year or 'life' for life list")
+        return(None)
     if len(data) == 0:
-        return("")
+        return(None)
+    if " " in data[1]:
+        print('\n', "Remember to replace any spaces in county name with an underscore(_)")
+        return(None)
+    if getID(data[1], data[2], data[3], False) is None:
+        return(None)
     if getLyst:
         try:
             lyst = getList(data[0], data[1], data[2], data[3])
         except IndexError:
             print('\n' + "Make sure you input a time/location fitting the requested format (use '/' even with empty catergory)")
-            return("")
+            return(None)
         return(inp, lyst)
     return(data)
 
@@ -86,8 +93,8 @@ def getID(county, state, country, create_if_none = True):   #get the county ID
     if (county_id is None) and (create_if_none):            #if it doesn't exist, at the county to the database
         county_id = addCounty(county, state, country)
     elif (create_if_none == False) and (county_id is None):
-        print("\n", "Location not found")
-        return
+        print("\n", "Location not found", '\n')
+        return(None)
     county_id = str(county_id)
     numeric_filter = filter(str.isdigit, county_id)
     return("".join(numeric_filter))
@@ -110,7 +117,7 @@ def addCounty(county, state, country):
 
 def makeReport():  #manually add a report to the database
     data = inputLocation()
-    if len(data) == 0:
+    if data is None:
         return
     print("Enter your list to report: ")
     birds = []
@@ -168,7 +175,7 @@ def addBird(time, county, state, country, birdname):
 
 def printList():    #not currently functional with specific locations
     data = inputLocation(True)
-    if len(data) == 0:
+    if data is None:
         return
     print('\n')
     if len(data[1]) == 0:
@@ -217,10 +224,10 @@ def importData():  #imports data from a downloaded ebird csv file
 
 def compareLists():
     data1 = inputLocation(True)
-    if len(data1) == 0:
+    if data1 is None:
         return
     data2 = inputLocation(True)
-    if len(data2) == 0:
+    if data2 is None:
         return
     print("\nBirds in " + str(data1[0]) + " not in " + str(data2[0]) + ':\n')
     count1 = 0
@@ -238,8 +245,26 @@ def compareLists():
     print(str(count2) + " not in " + str(data1[0]))
     return
     
+def sumLists():
+    data = []
+    while True:
+        if (len(data) < 2) or (input("Add another list(y/n)") in ['y', 'Y']):
+            loc = inputLocation(True)
+            if loc is not None:
+                data.append(loc[1])
+            print('\n')
+        else:
+            break
+    birds = []
+    print('\n')
+    for i in data:
+        for j in i:
+            if j not in birds:
+                birds.append(j)
+    for i in birds:
+        print(i)
+    print('\n' + "You have seen a total of " + str(len(birds)) + " in the given locations combined")
+    return
 
-
-    
     
 birdApp()
