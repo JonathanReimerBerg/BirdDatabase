@@ -45,7 +45,7 @@ def inputLocation(getLyst = False):
     inp = input("What list would you like to see (year/county/state/country): ")
     data = inp.split("/")
     if data[0].isdigit():
-        if 1900 < int(data[0]) < 2023:
+        if 1900 < int(data[0]) < 2024:
             data[0] = "in_" + data[0]
         else:
             print('\n' + "Invalid year")
@@ -208,8 +208,9 @@ def importData():  #imports data from a downloaded ebird csv file
             countries.append(row[5][0:2])
             counties.append(row[6])
             dates.append(row[11])
-    if input("Import birds from a certain date forward? ") in ['y','Y','Yes','yes','YES']:
+    if input("Import birds from a certain date forward? (y/n) ") in ['y','Y','Yes','yes','YES']:
         date = input("From what date would you like to import? mm/dd/yyyy: ")
+        print('\n', "Importing data... This may take a while", '\n')
         try:
             date = datetime.datetime(int(date[6:]), int(date[0:2]), int(date[3:5]))
             for i in range(1, len(names)):
@@ -217,9 +218,11 @@ def importData():  #imports data from a downloaded ebird csv file
                     addBird("in_" + dates[i][0:4], counties[i], states[i], countries[i], names[i])
         except:
             print("Not a valid year" + '\n')
-    else:   
+    else:
+        print('\n', "Importing data... This may take a while", '\n')
         for i in range(1, len(names)):
             addBird("in_" + dates[i][0:4], counties[i], states[i], countries[i], names[i])
+    return
 
 
 def compareLists():
