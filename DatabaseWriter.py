@@ -6,16 +6,16 @@ sci_names = []
 groups = []
 
   
-with open('eBird_Taxonomy_v2021.csv', 'r') as file:
+with open('eBird_Taxonomy_v2023.csv', 'r') as file:
         reader = csv.reader(file)
         for row in reader:
-            if ("(" in row[3]) or (" x " in row[3]) or ("/" in row[3]) or ("sp." in row[3]):  #removes non-valid birds, like subspecies
+            if ("(" in row[4]) or (" x " in row[4]) or ("/" in row[4]) or ("sp." in row[4]):  #removes non-valid birds, like subspecies
                 continue
-            if row[6] == "FAMILY":   #don't count first row
+            if row[7] == "FAMILY":   #don't count first row
                 continue
-            names.append(row[3].replace("'", "''"))  #for SQL grammer
-            sci_names.append(row[4])
-            group = row[6]
+            names.append(row[4].replace("'", "''"))  #for SQL grammer
+            sci_names.append(row[5])
+            group = row[7]
             groups.append(group[group.find("(")+1:group.find(")")].replace("'", "''")) #just add what is in parenthesis
 
 connection = sqlite3.connect("BirdingDatabase.db")
@@ -44,6 +44,7 @@ for i in range(0, len(names)):
 
 command = command[:-1] #remove final comma
 
+print(command)
 crsr.execute(command)
 connection.commit()
 

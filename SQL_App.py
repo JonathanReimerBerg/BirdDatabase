@@ -58,8 +58,9 @@ def inputLocation(getLyst = False):
     if " " in data[1]:
         print('\n', "Remember to replace any spaces in county name with an underscore(_)")
         return(None)
-    if getID(data[1], data[2], data[3], False) is None:
-        return(None)
+    if data != ['life', '', '', '']:
+        if getID(data[1], data[2], data[3], False) is None:
+            return(None)
     if getLyst:
         try:
             lyst = getList(data[0], data[1], data[2], data[3])
@@ -69,7 +70,7 @@ def inputLocation(getLyst = False):
         return(inp, lyst)
     return(data)
 
-def getList(time, county = None, state = None, country = None): 
+def getList(time, county = None, state = None, country = None):
     if country == "":
         command = "SELECT name from ALL_BIRDS where " + time + " = 1 order by name"
     else:
@@ -186,7 +187,7 @@ def printList():    #not currently functional with specific locations
         print('\n', "You have seen " + str(len(data[1])) + " birds")
     return     
 
-def countLifers():   #runs when program is started\
+def countLifers():   #runs when program is started
     life_list = str(runCommand("SELECT count(*) from ALL_BIRDS where life = 1", False, True))
     numeric_filter = filter(str.isdigit, life_list)
     life_list = "".join(numeric_filter)
