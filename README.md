@@ -1,5 +1,5 @@
 # Bird Database
-SQL Database with Python to store person bird sightings.
+SQL Database with Python to store personal bird sightings.
 
 # Overview
 This database is meant for storing EBird sightings in a locally stored database to view
